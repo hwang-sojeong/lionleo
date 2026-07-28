@@ -66,8 +66,11 @@ const EMOJI_SET = [
 ];
 
 /* ── 상태 ── */
-let cats = load(LS_CATS, DEFAULT_CATS);
 let records = migrate(load(LS_RECS, {}));
+/* 처음 쓰는 사람은 빈 상태로 시작해 직접 등록한다.
+   단, 예전 기본값(리온·레오)으로 기록만 쌓아온 기존 사용자는 그대로 지켜준다. */
+let cats = load(LS_CATS, null)
+  ?? (Object.keys(records).length ? structuredClone(DEFAULT_CATS) : []);
 let lists = load(LS_LISTS, { brand: [], product: [], treat: [], flavor: [] });
 lists.flavor ??= [];   // 예전 목록에 맛 칸이 없을 수 있으니 채운다
 let avatars = [];
@@ -215,6 +218,23 @@ async function renderPanels() {
   revokeAll();
   const box = $('#panels');
   box.innerHTML = '';
+
+  // 등록된 고양이가 없으면(처음 쓰는 사람) 환영 안내를 보여준다
+  if (!cats.length) {
+    const w = document.createElement('div');
+    w.className = 'card welcome';
+    w.innerHTML = `<span class="welcome__emoji">🐱</span>
+      <p class="welcome__title">우리 아이를 등록해 주세요</p>
+      <p class="welcome__desc">고양이를 추가하면 오늘부터 건강 기록을 시작할 수 있어요.</p>`;
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'primarybtn welcome__btn';
+    btn.textContent = '＋ 고양이 추가하기';
+    btn.addEventListener('click', openSettings);
+    w.append(btn);
+    box.append(w);
+    return;
+  }
 
   for (const cat of cats) {
     const rec = getRec(viewDate, cat.id);
@@ -981,7 +1001,10 @@ function closeIconPicker() { $('#iconBackdrop').hidden = true; iconTarget = null
 
 /* ── 설정 ── */
 function openSettings() {
-  renderCatList(cats.map(c => ({ ...c })));
+  // 아직 아무도 없으면 바로 이름 채울 수 있게 빈 칸 하나로 시작
+  const draft = cats.length ? cats.map(c => ({ ...c }))
+                            : [{ id: 'c' + Date.now(), name: '', emoji: '🐱' }];
+  renderCatList(draft);
   $('#setBackdrop').hidden = false;
   document.body.style.overflow = 'hidden';
   showStorage();
@@ -1070,6 +1093,7 @@ async function showStorage() {
 
 function saveSettings() {
   const draft = $('#catList')._draft;
+  if (!draft.length) return toast('고양이를 한 마리 이상 추가해 주세요');
   for (const c of draft) {
     c.name = c.name.trim();
     if (!c.name) return toast('이름을 비워둘 수 없어요');

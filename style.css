@@ -222,6 +222,18 @@ button { cursor: pointer; background: none; border: none; }
 .log__sep { height: 1px; background: var(--line); margin: .15rem 0; }
 
 .panel__empty { font-size: .78rem; color: var(--text-dim); padding: .4rem 0; }
+
+/* ── 첫 실행: 우리 아이 등록 안내 ── */
+.welcome {
+  grid-column: 1 / -1;
+  display: flex; flex-direction: column; align-items: center;
+  gap: .4rem; text-align: center;
+  padding: 1.8rem 1.2rem;
+}
+.welcome__emoji { font-size: 2.4rem; }
+.welcome__title { font-size: 1.02rem; font-weight: 700; }
+.welcome__desc { font-size: .84rem; color: var(--text-dim); max-width: 22rem; }
+.welcome__btn { margin-top: .8rem; max-width: 280px; }
 .panel__cta { font-size: .74rem; font-weight: 700; color: var(--accent); margin-top: auto; padding-top: .2rem; }
 
 /* ── 차트 ── */
