@@ -1,0 +1,691 @@
+/* ── 리온레오 건강수첩 ─────────────────────────── */
+
+:root {
+  --bg:        #f7f5f2;
+  --surface:   #ffffff;
+  --surface-2: #f1eeea;
+  --line:      #e3ded8;
+  --text:      #2b2725;
+  --text-dim:  #8b8279;
+  --accent:    #c8654a;
+  --accent-sub:#fbeee9;
+  --ok:        #5b9c6b;
+  --warn:      #d99a3f;
+  --danger:    #c14b3d;
+  --radius:    14px;
+  --shadow:    0 1px 3px rgba(0,0,0,.05), 0 8px 24px rgba(0,0,0,.05);
+  --tap:       44px;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg:        #1a1817;
+    --surface:   #232120;
+    --surface-2: #2c2928;
+    --line:      #383432;
+    --text:      #ece8e4;
+    --text-dim:  #948c85;
+    --accent:    #e08469;
+    --accent-sub:#3a2a25;
+    --ok:        #79b889;
+    --warn:      #e0ab58;
+    --danger:    #e0705f;
+    --shadow:    0 1px 3px rgba(0,0,0,.3), 0 8px 24px rgba(0,0,0,.3);
+  }
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+/* display 값을 지정한 요소도 hidden이면 숨겨지도록 */
+[hidden] { display: none !important; }
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo",
+               "Pretendard", "Noto Sans KR", system-ui, sans-serif;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  padding: env(safe-area-inset-top) 0 calc(env(safe-area-inset-bottom) + 24px);
+  max-width: 900px;
+  margin: 0 auto;
+}
+
+button, input, textarea, select { font: inherit; color: inherit; }
+button { cursor: pointer; background: none; border: none; }
+
+.kicker {
+  display: block;
+  font-size: .68rem;
+  font-weight: 700;
+  letter-spacing: .09em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+  margin-bottom: .5rem;
+}
+
+/* ── 상단 ── */
+.topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1rem 1.1rem .4rem;
+}
+.topbar__title { font-size: 1.35rem; font-weight: 800; letter-spacing: -.02em; }
+
+.iconbtn {
+  width: var(--tap); height: var(--tap);
+  display: grid; place-items: center;
+  border-radius: 50%;
+  font-size: 1.1rem;
+  transition: background .15s;
+}
+.iconbtn:active { background: var(--surface-2); }
+
+/* ── 날짜 ── */
+.datenav {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: .3rem;
+  padding: .3rem 1rem 1rem;
+}
+.datenav__arrow {
+  width: var(--tap); height: var(--tap);
+  border-radius: 50%;
+  color: var(--text-dim);
+  font-size: .85rem;
+  transition: background .15s, color .15s;
+}
+.datenav__arrow:active { background: var(--surface-2); color: var(--text); }
+.datenav__arrow:disabled { opacity: .25; }
+.datenav__label {
+  position: relative;
+  min-width: 11rem;
+  padding: .35rem 2rem;
+  border-radius: 10px;
+  text-align: center;
+  transition: background .15s;
+}
+.datenav__label:active { background: var(--surface-2); }
+/* 탭하면 날짜를 고를 수 있다는 힌트 */
+.datenav__label::after {
+  content: "📅";
+  position: absolute; right: .6rem; top: 50%;
+  transform: translateY(-50%);
+  font-size: .8rem; opacity: .5;
+  pointer-events: none;
+}
+/* 라벨 위에 투명하게 겹쳐 두어 탭하면 기기의 달력이 바로 열린다 */
+.datenav__picker {
+  position: absolute; inset: 0;
+  width: 100%; height: 100%;
+  opacity: 0;
+  border: 0; background: transparent;
+  cursor: pointer;
+  -webkit-appearance: none; appearance: none;
+}
+#dateText { display: block; font-size: 1.02rem; font-weight: 700; }
+.datenav__sub { display: block; font-size: .72rem; color: var(--text-dim); min-height: 1em; }
+
+/* ── 오늘로 돌아가기 (지난 날짜를 볼 때만 보임) ── */
+.datejump { display: flex; justify-content: center; padding: 0 1rem .9rem; margin-top: -.5rem; }
+.datejump__btn {
+  padding: .45rem 1rem;
+  border-radius: 100px;
+  background: var(--accent-sub);
+  color: var(--accent);
+  font-size: .8rem; font-weight: 700;
+  min-height: 36px;
+  transition: opacity .15s, transform .1s;
+}
+.datejump__btn:active { transform: scale(.97); opacity: .85; }
+
+/* ── 패널 ── */
+.panels {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: .7rem;
+  padding: 0 .8rem;
+  align-items: start;
+}
+/* 아주 좁은 화면에서만 위아래로 쌓는다 — 나란히 비교하는 게 이 앱의 핵심 */
+@media (max-width: 330px) { .panels { grid-template-columns: 1fr; } }
+
+.card {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+}
+.card__head { display: flex; align-items: baseline; justify-content: space-between; gap: .5rem; }
+.card__head .kicker { margin-bottom: 0; }
+
+.panel {
+  padding: .8rem .7rem .9rem;
+  display: flex;
+  flex-direction: column;
+  gap: .6rem;
+  text-align: left;
+  width: 100%;
+  transition: transform .1s, border-color .15s;
+}
+.panel:active { transform: scale(.985); }
+.panel--filled { border-color: color-mix(in srgb, var(--accent) 35%, var(--line)); }
+
+.panel__top { display: flex; align-items: center; gap: .4rem; min-width: 0; }
+/* 패널 제목과 시트 제목에서 함께 쓰이므로 inline-grid로 둔다 */
+.panel__avatar {
+  width: 1.5rem; height: 1.5rem;
+  display: inline-grid; place-items: center;
+  vertical-align: -.25em;
+  font-size: 1.2rem;
+  flex-shrink: 0;
+}
+.panel__avatar img { width: 100%; height: 100%; object-fit: contain; }
+.panel__name {
+  font-size: .95rem; font-weight: 700; letter-spacing: -.01em;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+
+.panel__thumb {
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  border-radius: 10px;
+  object-fit: cover;
+  background: var(--surface-2);
+  display: block;
+}
+.panel__thumb--empty {
+  display: grid; place-items: center;
+  color: var(--text-dim);
+  font-size: 1.3rem;
+  border: 1px dashed var(--line);
+}
+
+/* ── 패널 요약: 클릭 없이 하루가 다 보이도록 ── */
+.log { display: flex; flex-direction: column; gap: .3rem; }
+.log__item { display: flex; gap: .3rem; align-items: baseline; font-size: .74rem; line-height: 1.35; }
+.log__icon { flex-shrink: 0; font-size: .78rem; width: 1.05em; }
+.log__body { min-width: 0; flex: 1; }
+.log__time { color: var(--text-dim); font-variant-numeric: tabular-nums; margin-right: .25em; }
+.log__val { font-weight: 600; }
+.log__val--ok    { color: var(--ok); }
+.log__val--warn  { color: var(--warn); }
+.log__val--alert { color: var(--danger); }
+.log__sub { color: var(--text-dim); font-weight: 400; }
+.log__note {
+  color: var(--text);
+  font-weight: 400;
+  overflow-wrap: anywhere;
+}
+.log__sep { height: 1px; background: var(--line); margin: .15rem 0; }
+
+.panel__empty { font-size: .78rem; color: var(--text-dim); padding: .4rem 0; }
+.panel__cta { font-size: .74rem; font-weight: 700; color: var(--accent); margin-top: auto; padding-top: .2rem; }
+
+/* ── 차트 ── */
+.chart-card { margin: .9rem .8rem 0; padding: .95rem 1rem 1.1rem; }
+.chart-card__hint { font-size: .72rem; color: var(--text-dim); }
+.chart { margin-top: .7rem; }
+.chart svg { display: block; width: 100%; height: auto; overflow: visible; }
+.chart__empty { font-size: .82rem; color: var(--text-dim); text-align: center; padding: 1.6rem 0; }
+
+/* ── 사진 달력 ── */
+.cal-card { margin: .9rem .8rem 0; padding: .95rem 1rem 1.1rem; }
+.cal-card .kicker { margin-bottom: .7rem; }
+.cal__head {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: .55rem;
+}
+.cal__title { font-size: .95rem; font-weight: 700; }
+.cal__arrow {
+  width: 36px; height: 36px; border-radius: 50%;
+  color: var(--text-dim); font-size: .8rem;
+  transition: background .15s, color .15s;
+}
+.cal__arrow:active { background: var(--surface-2); color: var(--text); }
+.cal__arrow:disabled { opacity: .25; }
+
+/* 아이별로 골라 보기 (한 마리면 숨김) */
+.cal__cats { display: flex; gap: .4rem; margin-bottom: .8rem; }
+.cal__cat {
+  flex: 1;
+  display: inline-flex; align-items: center; justify-content: center; gap: .35rem;
+  min-height: 38px; padding: .4rem .5rem;
+  border: 1px solid var(--line); border-radius: 10px;
+  background: var(--surface);
+  font-size: .82rem; font-weight: 600; color: var(--text);
+  transition: background .13s, border-color .13s, color .13s;
+}
+.cal__cat[aria-pressed="true"] {
+  background: var(--accent-sub); border-color: var(--accent);
+  color: var(--accent); font-weight: 700;
+}
+.cal__catface { width: 1.15rem; height: 1.15rem; display: inline-grid; place-items: center; font-size: 1rem; flex-shrink: 0; }
+.cal__catface img { width: 100%; height: 100%; object-fit: contain; }
+
+.cal__week, .cal__grid {
+  display: grid; grid-template-columns: repeat(7, 1fr); gap: .28rem;
+}
+.cal__week { margin-bottom: .3rem; }
+.cal__week span { text-align: center; font-size: .66rem; font-weight: 700; color: var(--text-dim); }
+
+.cal__cell {
+  position: relative;
+  aspect-ratio: 1;
+  border-radius: 8px;
+  overflow: hidden;
+  background: var(--surface-2);
+  display: flex;
+}
+.cal__cell--blank { background: transparent; }
+.cal__cell--today { box-shadow: inset 0 0 0 2px var(--accent); }
+.cal__daynum {
+  position: absolute; top: 2px; left: 4px; z-index: 2;
+  font-size: .6rem; font-weight: 600; color: var(--text-dim);
+}
+/* 사진 위에서는 날짜를 흰 글씨로 또렷하게 */
+.cal__cell--photo .cal__daynum { color: #fff; text-shadow: 0 0 3px rgba(0,0,0,.75); }
+.cal__photos { display: flex; width: 100%; height: 100%; gap: 1px; }
+.cal__photo {
+  flex: 1; min-width: 0; height: 100%;
+  object-fit: cover; display: block;
+  background: var(--surface-2);
+  cursor: pointer;
+  transition: opacity .12s;
+}
+.cal__photo:active { opacity: .8; }
+/* 다른 아이도 이 날 사진이 있음을 알리는 점 */
+.cal__more {
+  position: absolute; right: 3px; bottom: 3px; z-index: 2;
+  width: 6px; height: 6px; border-radius: 50%;
+  background: var(--accent);
+  box-shadow: 0 0 0 1.5px var(--surface);
+}
+.cal__cell--photo .cal__more { box-shadow: 0 0 0 1.5px rgba(255,255,255,.85); }
+.cal__hint { font-size: .74rem; color: var(--text-dim); text-align: center; margin-top: .7rem; }
+
+/* ── 사진 크게 보기 (프로필 사진 정도 크기) ── */
+/* .sheet-backdrop 뒤에 정의된 flex-end에 밀리지 않도록 특이성을 올린다 */
+.sheet-backdrop.photoview-backdrop { align-items: center; }
+.photoview {
+  display: flex; flex-direction: column; align-items: center; gap: .7rem;
+  animation: pop .18s ease;
+}
+@keyframes pop { from { transform: scale(.9); opacity: 0 } }
+.photoview img {
+  width: min(70vw, 240px);
+  aspect-ratio: 4 / 3;
+  object-fit: cover;
+  border-radius: 12px;
+  box-shadow: var(--shadow);
+  background: var(--surface-2);
+}
+.photoview__cap {
+  color: #fff; font-size: .85rem; font-weight: 600;
+  text-shadow: 0 1px 4px rgba(0,0,0,.6);
+}
+
+/* ── 하단 ── */
+.foot { display: flex; align-items: center; justify-content: center; gap: .6rem; padding: 1.4rem 1rem .6rem; }
+.foot__dot { color: var(--text-dim); }
+.linkbtn {
+  font-size: .8rem; color: var(--text-dim); padding: .5rem .3rem;
+  text-decoration: underline; text-underline-offset: 3px;
+}
+.linkbtn:active { color: var(--text); }
+
+/* ── 시트 ── */
+.sheet-backdrop {
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,.42);
+  z-index: 50;
+  display: flex; align-items: flex-end; justify-content: center;
+  animation: fade .18s ease;
+  -webkit-backdrop-filter: blur(2px);
+  backdrop-filter: blur(2px);
+}
+@keyframes fade { from { opacity: 0 } }
+
+.sheet {
+  background: var(--surface);
+  width: 100%; max-width: 560px; max-height: 92vh;
+  border-radius: 20px 20px 0 0;
+  display: flex; flex-direction: column;
+  animation: rise .24s cubic-bezier(.2,.9,.3,1);
+}
+@keyframes rise { from { transform: translateY(100%) } }
+
+@media (min-width: 560px) {
+  .sheet-backdrop { align-items: center; }
+  .sheet { border-radius: var(--radius); max-height: 86vh; }
+  @keyframes rise { from { transform: translateY(14px); opacity: 0 } }
+}
+
+.sheet__grip { width: 34px; height: 4px; background: var(--line); border-radius: 2px; margin: .55rem auto .1rem; }
+@media (min-width: 560px) { .sheet__grip { display: none; } }
+
+.sheet__head {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: .5rem .7rem .5rem 1.2rem;
+  border-bottom: 1px solid var(--line);
+}
+.sheet__title { font-size: 1.05rem; font-weight: 700; }
+
+.sheet__body {
+  padding: 1.1rem 1.2rem;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  display: flex; flex-direction: column; gap: 1.3rem;
+}
+
+.sheet__foot {
+  padding: .8rem 1.2rem calc(.8rem + env(safe-area-inset-bottom));
+  border-top: 1px solid var(--line);
+  background: var(--surface);
+}
+
+.field { display: flex; flex-direction: column; }
+.field__head { display: flex; align-items: center; justify-content: space-between; margin-bottom: .5rem; }
+.field__head .kicker { margin-bottom: 0; }
+.sublabel { font-size: .78rem; color: var(--text-dim); margin: .55rem 0 .4rem; font-weight: 500; }
+.field > .sublabel:first-of-type { margin-top: 0; }
+
+.addbtn {
+  font-size: .78rem; font-weight: 700; color: var(--accent);
+  padding: .4rem .6rem; border-radius: 8px;
+  min-height: 32px;
+}
+.addbtn:active { background: var(--accent-sub); }
+
+/* ── 기록 카드 ── */
+.entries { display: flex; flex-direction: column; gap: .6rem; }
+.entry {
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: .7rem;
+  background: var(--surface-2);
+  display: flex; flex-direction: column; gap: .5rem;
+}
+.entry__head { display: flex; align-items: center; gap: .5rem; }
+.entry__time {
+  width: 7.5rem;
+  padding: .45rem .5rem;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface);
+  font-variant-numeric: tabular-nums;
+  min-height: 38px;
+}
+.entry__del {
+  margin-left: auto;
+  width: 32px; height: 32px;
+  border-radius: 8px;
+  color: var(--text-dim);
+  font-size: .8rem;
+}
+.entry__del:active { color: var(--danger); background: var(--surface); }
+.entry__none { font-size: .78rem; color: var(--text-dim); padding: .3rem 0; }
+
+/* ── 사료 여러 종류 (혼합) ── */
+.fooditems { display: flex; flex-direction: column; gap: .5rem; }
+.fooditem {
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: .55rem;
+  background: var(--surface);
+  display: flex; flex-direction: column; gap: .45rem;
+}
+.fooditem__head { display: flex; align-items: flex-start; gap: .4rem; }
+.fooditem__head .chips { flex: 1; }
+.fooditem__del {
+  width: 30px; height: 30px; flex-shrink: 0;
+  border-radius: 8px; color: var(--text-dim); font-size: .78rem;
+}
+.fooditem__del:active { color: var(--danger); background: var(--surface-2); }
+.additem {
+  align-self: flex-start;
+  font-size: .78rem; font-weight: 700; color: var(--accent);
+  padding: .4rem .55rem; border-radius: 8px; min-height: 34px;
+}
+.additem:active { background: var(--accent-sub); }
+
+/* 그램 입력 */
+.gram { display: flex; align-items: center; gap: .45rem; }
+.gram__input { flex: 1; }
+.gram__unit { font-size: .9rem; color: var(--text-dim); font-weight: 600; }
+
+/* ── 칩 ── */
+.chips { display: flex; flex-wrap: wrap; gap: .35rem; }
+.chip {
+  display: inline-flex; align-items: center; justify-content: center; gap: .3rem;
+  min-height: var(--tap);
+  padding: .45rem .75rem;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--surface);
+  font-size: .82rem; font-weight: 500;
+  transition: background .13s, border-color .13s, color .13s;
+  -webkit-tap-highlight-color: transparent;
+}
+.chip:active { transform: scale(.96); }
+.chip[aria-pressed="true"] {
+  background: var(--accent-sub);
+  border-color: var(--accent);
+  color: var(--accent);
+  font-weight: 700;
+}
+.chip--action { flex: 1; cursor: pointer; }
+
+/* 그림이 들어가는 칩 (똥 크기) */
+.chip--pic {
+  flex-direction: column; gap: .15rem;
+  padding: .45rem .3rem .4rem;
+  flex: 1; min-width: 0;
+  min-height: auto;
+}
+.chip--pic svg, .chip--pic img { width: 100%; height: 26px; }
+.chip--pic svg { fill: currentColor; color: var(--text-dim); }
+.chip--pic[aria-pressed="true"] svg { color: var(--accent); }
+.chip__cap { font-size: .68rem; }
+
+/* ── 입력 ── */
+.input {
+  width: 100%;
+  padding: .65rem .75rem;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--surface);
+  font-size: 1rem;
+  transition: border-color .15s;
+  min-height: 40px;
+}
+.input:focus { outline: none; border-color: var(--accent); }
+.input--area { resize: vertical; min-height: 2.8rem; }
+.input--sm { font-size: .88rem; padding: .5rem .6rem; }
+
+.duo { display: grid; grid-template-columns: 1fr 1fr; gap: .4rem; }
+
+.more { border-top: 1px solid var(--line); padding-top: .9rem; }
+.more__summary {
+  font-size: .82rem; color: var(--text-dim);
+  cursor: pointer; padding: .5rem 0;
+  list-style: none; font-weight: 500;
+}
+.more__summary::-webkit-details-marker { display: none; }
+.more__summary::before { content: "＋ "; }
+.more[open] .more__summary::before { content: "－ "; }
+.more__body { display: flex; flex-direction: column; gap: .9rem; padding-top: .5rem; }
+
+/* ── 버튼 ── */
+.primarybtn {
+  width: 100%; min-height: var(--tap);
+  padding: .85rem;
+  border-radius: 11px;
+  background: var(--accent);
+  color: #fff;
+  font-size: .95rem; font-weight: 700;
+  transition: opacity .15s, transform .1s;
+}
+.primarybtn:active { transform: scale(.985); opacity: .9; }
+
+.ghostbtn {
+  min-height: var(--tap); padding: .6rem;
+  border: 1px dashed var(--line);
+  border-radius: 10px;
+  color: var(--text-dim);
+  font-size: .85rem; margin-top: .5rem;
+  transition: border-color .15s, color .15s;
+}
+.ghostbtn:active { border-color: var(--accent); color: var(--accent); }
+
+.dangerbtn {
+  align-self: center; padding: .6rem 1rem;
+  font-size: .8rem; color: var(--danger);
+  text-decoration: underline; text-underline-offset: 3px;
+}
+
+/* ── 사진 ── */
+.photo {
+  position: relative; width: 100%;
+  aspect-ratio: 4 / 3;
+  border-radius: 12px; overflow: hidden;
+  background: var(--surface-2);
+  border: 1px dashed var(--line);
+  transition: aspect-ratio .2s;
+}
+/* 사진이 없는 날엔 상자를 낮춰 매일 입력을 위로 끌어올린다 */
+.photo--empty { aspect-ratio: 5 / 1; }
+.photo img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.photo__empty {
+  position: absolute; inset: 0;
+  display: grid; place-content: center; justify-items: center;
+  gap: .3rem; color: var(--text-dim);
+}
+.photo__icon { font-size: 1.7rem; }
+.photo__text { font-size: .8rem; }
+/* 낮아진 빈 상자에서는 아이콘과 글자를 가로로 눕힌다 */
+.photo--empty .photo__empty { grid-auto-flow: column; align-items: center; gap: .5rem; }
+.photo--empty .photo__icon { font-size: 1.1rem; }
+.photo__remove {
+  position: absolute; top: .45rem; right: .45rem;
+  width: 30px; height: 30px; border-radius: 50%;
+  background: rgba(0,0,0,.6); color: #fff;
+  font-size: .8rem; display: grid; place-items: center;
+}
+.photo__actions { display: flex; gap: .5rem; margin-top: .6rem; }
+
+/* ── 사진 자르기 ── */
+.crop-backdrop { align-items: center; background: rgba(0,0,0,.86); z-index: 60; }
+.crop {
+  width: 100%; max-width: 560px;
+  display: flex; flex-direction: column; gap: .8rem;
+  padding: env(safe-area-inset-top) 0 calc(env(safe-area-inset-bottom) + .5rem);
+}
+.crop__head {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: .3rem .6rem;
+}
+.crop__title { color: #fff; font-size: .9rem; font-weight: 600; }
+.crop__cancel, .crop__done {
+  color: #fff; font-size: .92rem; padding: .6rem .8rem;
+  min-height: var(--tap);
+}
+.crop__done { font-weight: 800; color: #ffb59e; }
+
+.crop__stage {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  overflow: hidden;
+  background: #000;
+  touch-action: none;
+  cursor: grab;
+  user-select: none;
+}
+.crop__stage:active { cursor: grabbing; }
+.crop__stage img {
+  position: absolute; top: 50%; left: 50%;
+  transform-origin: center;
+  max-width: none;
+  pointer-events: none;
+}
+/* 잘릴 영역이 4:3 그대로임을 보여주는 격자 */
+.crop__mask {
+  position: absolute; inset: 0;
+  pointer-events: none;
+  background:
+    linear-gradient(to right, transparent 33.33%, rgba(255,255,255,.28) 33.33%, rgba(255,255,255,.28) calc(33.33% + 1px), transparent calc(33.33% + 1px)),
+    linear-gradient(to right, transparent 66.66%, rgba(255,255,255,.28) 66.66%, rgba(255,255,255,.28) calc(66.66% + 1px), transparent calc(66.66% + 1px)),
+    linear-gradient(to bottom, transparent 33.33%, rgba(255,255,255,.28) 33.33%, rgba(255,255,255,.28) calc(33.33% + 1px), transparent calc(33.33% + 1px)),
+    linear-gradient(to bottom, transparent 66.66%, rgba(255,255,255,.28) 66.66%, rgba(255,255,255,.28) calc(66.66% + 1px), transparent calc(66.66% + 1px));
+  box-shadow: inset 0 0 0 2px rgba(255,255,255,.7);
+}
+
+.crop__tools { display: flex; align-items: center; gap: .7rem; padding: 0 1.2rem; }
+.crop__zoomicon { font-size: .9rem; }
+.crop__zoom { flex: 1; accent-color: #ffb59e; height: var(--tap); }
+.crop__hint { color: rgba(255,255,255,.6); font-size: .74rem; text-align: center; padding: 0 1rem; }
+
+/* ── 설정: 고양이 목록 ── */
+.catlist { display: flex; flex-direction: column; gap: .6rem; }
+.catrow {
+  display: flex; flex-direction: column; gap: .55rem;
+  padding: .6rem;
+  border: 1px solid var(--line); border-radius: 12px;
+  background: var(--surface-2);
+}
+.catrow__main { display: flex; align-items: center; gap: .45rem; }
+.catrow__water { display: flex; flex-direction: column; gap: .3rem; }
+.catrow__waterlab { font-size: .74rem; color: var(--text-dim); font-weight: 500; }
+.catrow__icon {
+  width: var(--tap); min-width: var(--tap); height: var(--tap);
+  border: 1px solid var(--line); border-radius: 10px;
+  background: var(--surface-2);
+  display: grid; place-items: center;
+  font-size: 1.15rem;
+}
+.catrow__icon img { width: 60%; height: 60%; object-fit: contain; }
+.catrow__name { flex: 1; min-width: 0; }
+.catrow__del {
+  width: var(--tap); min-width: var(--tap); height: var(--tap);
+  border-radius: 10px; color: var(--text-dim); font-size: .9rem;
+}
+.catrow__del:active { color: var(--danger); }
+
+.hint { font-size: .78rem; color: var(--text-dim); line-height: 1.6; white-space: pre-line; }
+#waterHint { margin-top: .55rem; }
+
+/* ── 아이콘 고르기 ── */
+.icongrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(52px, 1fr)); gap: .4rem; }
+.iconopt {
+  aspect-ratio: 1;
+  border: 1px solid var(--line); border-radius: 10px;
+  background: var(--surface);
+  display: grid; place-items: center;
+  font-size: 1.4rem;
+  transition: background .13s, border-color .13s;
+}
+.iconopt img { width: 66%; height: 66%; object-fit: contain; }
+.iconopt:active { transform: scale(.94); }
+.iconopt[aria-pressed="true"] { border-color: var(--accent); background: var(--accent-sub); }
+
+/* ── 토스트 ── */
+.toast {
+  position: fixed; left: 50%;
+  bottom: calc(1.6rem + env(safe-area-inset-bottom));
+  transform: translateX(-50%);
+  background: var(--text); color: var(--bg);
+  padding: .65rem 1.1rem; border-radius: 100px;
+  font-size: .82rem; font-weight: 600;
+  z-index: 90;
+  animation: toast .2s ease;
+  box-shadow: var(--shadow);
+  max-width: 90vw; text-align: center;
+}
+@keyframes toast { from { opacity: 0; transform: translate(-50%, 8px) } }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation: none !important; transition: none !important; }
+}

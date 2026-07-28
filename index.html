@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#f7f5f2">
+<title>리온레오 건강수첩</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<header class="topbar">
+  <h1 class="topbar__title">건강수첩</h1>
+  <button class="iconbtn" id="btnSettings" aria-label="설정">⚙️</button>
+</header>
+
+<nav class="datenav">
+  <button class="datenav__arrow" id="btnPrev" aria-label="이전 날">◀</button>
+  <div class="datenav__label" id="btnToday">
+    <span id="dateText">오늘</span>
+    <span class="datenav__sub" id="dateSub"></span>
+    <input type="date" id="datePicker" class="datenav__picker" aria-label="날짜 선택">
+  </div>
+  <button class="datenav__arrow" id="btnNext" aria-label="다음 날">▶</button>
+</nav>
+
+<div class="datejump" id="datejump" hidden>
+  <button class="datejump__btn" id="btnGoToday">↩︎ 오늘로 돌아가기</button>
+</div>
+
+<main class="panels" id="panels"></main>
+
+<section class="card chart-card">
+  <div class="card__head">
+    <span class="kicker">몸무게 추이</span>
+    <span class="chart-card__hint" id="chartHint"></span>
+  </div>
+  <div id="chart" class="chart"></div>
+</section>
+
+<section class="card cal-card">
+  <span class="kicker">📷 사진 달력</span>
+  <div class="cal__head">
+    <button class="cal__arrow" id="calPrev" aria-label="이전 달">◀</button>
+    <span class="cal__title" id="calTitle"></span>
+    <button class="cal__arrow" id="calNext" aria-label="다음 달">▶</button>
+  </div>
+  <div class="cal__cats" id="calCats"></div>
+  <div class="cal__week" aria-hidden="true">
+    <span>일</span><span>월</span><span>화</span><span>수</span><span>목</span><span>금</span><span>토</span>
+  </div>
+  <div class="cal__grid" id="calGrid"></div>
+  <p class="cal__hint" id="calHint"></p>
+</section>
+
+<footer class="foot">
+  <button class="linkbtn" id="btnBackup">기록 백업하기</button>
+  <span class="foot__dot">·</span>
+  <button class="linkbtn" id="btnRestore">백업 불러오기</button>
+  <input type="file" id="restoreFile" accept="application/json" hidden>
+</footer>
+
+
+<!-- ── 기록 입력 시트 ── -->
+<div class="sheet-backdrop" id="sheetBackdrop" hidden>
+  <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="sheetTitle">
+    <div class="sheet__grip"></div>
+    <div class="sheet__head">
+      <h2 class="sheet__title" id="sheetTitle">기록</h2>
+      <button class="iconbtn" id="btnCloseSheet" aria-label="닫기">✕</button>
+    </div>
+
+    <div class="sheet__body">
+
+      <!-- 사진 -->
+      <div class="field">
+        <span class="kicker">오늘의 사진</span>
+        <div class="photo photo--empty" id="photoBox">
+          <img id="photoImg" alt="" hidden>
+          <div class="photo__empty" id="photoEmpty">
+            <span class="photo__icon">📷</span>
+            <span class="photo__text">사진 찍기</span>
+          </div>
+          <button class="photo__remove" id="btnPhotoRemove" hidden aria-label="사진 삭제">✕</button>
+        </div>
+        <div class="photo__actions">
+          <label class="chip chip--action">📷 카메라
+            <input type="file" id="photoCamera" accept="image/*" capture="environment" hidden>
+          </label>
+          <label class="chip chip--action">🖼️ 사진첩
+            <input type="file" id="photoLibrary" accept="image/*" hidden>
+          </label>
+        </div>
+      </div>
+
+      <!-- 응가 -->
+      <div class="field">
+        <div class="field__head">
+          <span class="kicker">💩 응가</span>
+          <button class="addbtn" id="btnAddPoop">+ 추가</button>
+        </div>
+        <div class="entries" id="poopList"></div>
+      </div>
+
+      <!-- 밥 -->
+      <div class="field">
+        <div class="field__head">
+          <span class="kicker">🍚 밥</span>
+          <button class="addbtn" id="btnAddMeal">+ 추가</button>
+        </div>
+        <div class="entries" id="mealList"></div>
+      </div>
+
+      <!-- 간식 -->
+      <div class="field">
+        <div class="field__head">
+          <span class="kicker">🍬 간식 · 츄르</span>
+          <button class="addbtn" id="btnAddTreat">+ 추가</button>
+        </div>
+        <div class="entries" id="treatList"></div>
+      </div>
+
+      <!-- 물 -->
+      <div class="field">
+        <span class="kicker">💧 물</span>
+        <div class="chips" id="waterLevel"></div>
+        <p class="hint" id="waterHint"></p>
+      </div>
+
+      <!-- 추가 기록 -->
+      <details class="more" id="moreBox">
+        <summary class="more__summary">필요할 때만 — 몸무게 · 특이사항 · 투약</summary>
+        <div class="more__body">
+          <div class="field">
+            <label class="sublabel" for="weight">몸무게 (kg)</label>
+            <input type="number" id="weight" class="input" inputmode="decimal" step="0.01" min="0" max="30" placeholder="예: 5.8">
+          </div>
+          <div class="field">
+            <label class="sublabel" for="note">오늘의 특이사항</label>
+            <textarea id="note" class="input input--area" rows="2" placeholder="눈에 띈 점"></textarea>
+          </div>
+          <div class="field">
+            <label class="sublabel" for="med">투약 · 병원</label>
+            <textarea id="med" class="input input--area" rows="2" placeholder="약, 병원 방문 등"></textarea>
+          </div>
+        </div>
+      </details>
+
+      <button class="dangerbtn" id="btnDelete">이 날 기록 삭제</button>
+    </div>
+
+    <div class="sheet__foot">
+      <button class="primarybtn" id="btnSave">저장</button>
+    </div>
+  </div>
+</div>
+
+
+<!-- ── 사진 자르기 ── -->
+<div class="sheet-backdrop crop-backdrop" id="cropBackdrop" hidden>
+  <div class="crop" role="dialog" aria-modal="true" aria-label="사진 자르기">
+    <div class="crop__head">
+      <button class="crop__cancel" id="btnCropCancel">취소</button>
+      <span class="crop__title">고양이만 잘라내기</span>
+      <button class="crop__done" id="btnCropDone">완료</button>
+    </div>
+    <div class="crop__stage" id="cropStage">
+      <img id="cropImg" alt="자를 사진" draggable="false">
+      <div class="crop__mask"></div>
+    </div>
+    <div class="crop__tools">
+      <span class="crop__zoomicon">🔍</span>
+      <input type="range" id="cropZoom" class="crop__zoom" min="1" max="4" step="0.01" value="1" aria-label="확대">
+    </div>
+    <p class="crop__hint">사진을 끌어서 위치를 맞추고, 막대로 크기를 조절하세요</p>
+  </div>
+</div>
+
+
+<!-- ── 설정 ── -->
+<div class="sheet-backdrop" id="setBackdrop" hidden>
+  <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="setTitle">
+    <div class="sheet__grip"></div>
+    <div class="sheet__head">
+      <h2 class="sheet__title" id="setTitle">설정</h2>
+      <button class="iconbtn" id="btnCloseSet" aria-label="닫기">✕</button>
+    </div>
+    <div class="sheet__body">
+      <div class="field">
+        <span class="kicker">우리 아이들</span>
+        <div id="catList" class="catlist"></div>
+        <button class="ghostbtn" id="btnAddCat">+ 추가하기</button>
+      </div>
+      <div class="field">
+        <span class="kicker">저장 공간</span>
+        <p class="hint" id="storageInfo">확인 중…</p>
+      </div>
+    </div>
+    <div class="sheet__foot">
+      <button class="primarybtn" id="btnSaveSet">저장</button>
+    </div>
+  </div>
+</div>
+
+
+<!-- ── 아이콘 고르기 ── -->
+<div class="sheet-backdrop" id="iconBackdrop" hidden>
+  <div class="sheet" role="dialog" aria-modal="true" aria-label="아이콘 고르기">
+    <div class="sheet__grip"></div>
+    <div class="sheet__head">
+      <h2 class="sheet__title">아이콘 고르기</h2>
+      <button class="iconbtn" id="btnCloseIcon" aria-label="닫기">✕</button>
+    </div>
+    <div class="sheet__body">
+      <div class="field" id="myIconField" hidden>
+        <span class="kicker">내가 그린 그림</span>
+        <div class="icongrid" id="myIcons"></div>
+      </div>
+      <div class="field">
+        <span class="kicker">이모지</span>
+        <div class="icongrid" id="emojiIcons"></div>
+      </div>
+      <p class="hint" id="iconHint"></p>
+    </div>
+  </div>
+</div>
+
+<!-- ── 사진 크게 보기 ── -->
+<div class="sheet-backdrop photoview-backdrop" id="photoViewBackdrop" hidden>
+  <figure class="photoview">
+    <img id="photoViewImg" alt="사진">
+    <figcaption class="photoview__cap" id="photoViewCap"></figcaption>
+  </figure>
+</div>
+
+<datalist id="dlBrand"></datalist>
+<datalist id="dlProduct"></datalist>
+<datalist id="dlTreat"></datalist>
+<datalist id="dlFlavor"></datalist>
+
+<div class="toast" id="toast" hidden></div>
+
+<script src="script.js"></script>
+</body>
+</html>
